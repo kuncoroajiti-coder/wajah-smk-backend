@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class AdminMiddleware
+class PasswordChangeMiddleware
 {
     /**
      * Handle an incoming request.
@@ -27,9 +27,10 @@ class AdminMiddleware
             ], 403);
         }
 
-        if ($user->role !== 'super_admin') {
+        if ($user->must_change_password) {
             return response()->json([
-                'message' => 'Akses hanya untuk Super Admin.',
+                'message' => 'Anda wajib mengganti password sebelum menggunakan fitur lain.',
+                'must_change_password' => true,
             ], 403);
         }
 

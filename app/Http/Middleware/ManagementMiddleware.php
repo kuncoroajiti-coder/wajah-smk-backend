@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class AdminMiddleware
+class ManagementMiddleware
 {
     /**
      * Handle an incoming request.
@@ -27,9 +27,9 @@ class AdminMiddleware
             ], 403);
         }
 
-        if ($user->role !== 'super_admin') {
+        if (!in_array($user->role, ['manajemen', 'super_admin'], true)) {
             return response()->json([
-                'message' => 'Akses hanya untuk Super Admin.',
+                'message' => 'Akses hanya untuk Manajemen atau Super Admin.',
             ], 403);
         }
 

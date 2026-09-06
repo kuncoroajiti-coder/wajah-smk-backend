@@ -17,7 +17,9 @@ class ReviewController extends Controller
             ->with('photos')
             ->latest('published_at')
             ->latest('created_at')
-            ->paginate($request->integer('per_page', 10));
+            ->paginate(
+                min($request->integer('per_page', 10), 50)
+            );
 
         return response()->json($reviews);
     }
@@ -57,7 +59,7 @@ class ReviewController extends Controller
         }
 
         $reviews = $query->paginate(
-            $request->integer('per_page', 12)
+            min($request->integer('per_page', 12), 50)
         );
 
         return response()->json($reviews);
@@ -83,6 +85,12 @@ class ReviewController extends Controller
 
     public function store(Request $request, School $school)
     {
+        if (!$school->is_active) {
+            return response()->json([
+                'message' => 'Sekolah ini sedang tidak aktif dan tidak dapat menerima ulasan.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'rating' => ['required', 'integer', 'min:1', 'max:5'],
             'title' => ['nullable', 'string', 'max:255'],
@@ -133,7 +141,9 @@ class ReviewController extends Controller
                 'photos',
             ])
             ->latest('created_at')
-            ->paginate($request->integer('per_page', 10));
+            ->paginate(
+                min($request->integer('per_page', 10), 50)
+            );
 
         return response()->json($reviews);
     }

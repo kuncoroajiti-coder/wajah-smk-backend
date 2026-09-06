@@ -14,7 +14,9 @@ class AdminReviewController extends Controller
             ->where('status', 'pending')
             ->with(['school', 'photos'])
             ->latest('created_at')
-            ->paginate($request->integer('per_page', 20));
+            ->paginate(
+                min($request->integer('per_page', 20), 50)
+            );
 
         return response()->json($reviews);
     }

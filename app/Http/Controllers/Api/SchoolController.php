@@ -134,7 +134,7 @@ class SchoolController extends Controller
             ->withCount('reviews')
             ->orderBy('name')
             ->paginate(
-                $request->integer('per_page', 20)
+                min($request->integer('per_page', 20), 50)
             );
 
         return response()->json($schools);
