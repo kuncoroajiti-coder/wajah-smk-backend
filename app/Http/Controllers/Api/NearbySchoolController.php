@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\School;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class NearbySchoolController extends Controller
 {
@@ -24,7 +23,7 @@ class NearbySchoolController extends Controller
         $limit = (int) ($validated['limit'] ?? 10);
 
         // Bounding box awal agar PostgreSQL tidak menghitung
-        // jarak untuk seluruh data sekolah.
+        // jarak untuk seluruh sekolah.
         $latitudeDelta = $radius / 111.32;
 
         $cosLatitude = max(
@@ -40,6 +39,7 @@ class NearbySchoolController extends Controller
         $minLongitude = max(-180, $longitude - $longitudeDelta);
         $maxLongitude = min(180, $longitude + $longitudeDelta);
 
+        // Rumus Haversine dalam kilometer.
         $distanceExpression = <<<'SQL'
             6371 * 2 * ASIN(
                 SQRT(
@@ -51,7 +51,7 @@ class NearbySchoolController extends Controller
             )
         SQL;
 
-        $baseQuery = School::query()
+        $schools = School::query()
             ->where('is_active', true)
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
@@ -72,14 +72,11 @@ class NearbySchoolController extends Controller
             ->selectRaw(
                 "{$distanceExpression} AS distance_km",
                 [$latitude, $latitude, $longitude]
-            );
-
-        // Filter distance dilakukan di query luar.
-        // Ini menghindari penggunaan HAVING tanpa GROUP BY
-        // yang tidak didukung PostgreSQL.
-        $schools = DB::query()
-            ->fromSub($baseQuery, 'nearby_schools')
-            ->where('distance_km', '<=', $radius)
+            )
+            ->whereRaw(
+                "{$distanceExpression} <= ?",
+                [$latitude, $latitude, $longitude, $radius]
+            )
             ->orderBy('distance_km')
             ->limit($limit)
             ->get();
