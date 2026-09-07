@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AdminSchoolController;
 use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ManagementDashboardController;
+use App\Http\Controllers\Api\NearbySchoolController;
 use App\Http\Controllers\Api\PasswordController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\SchoolController;
@@ -16,6 +17,7 @@ Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/schools', [SchoolController::class, 'index']);
 
+Route::get('/schools/nearby', [NearbySchoolController::class, 'index']);
 Route::get('/schools/{school}', [SchoolController::class, 'show']);
 
 Route::get('/schools/{school}/reviews', [ReviewController::class, 'index']);
