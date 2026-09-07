@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\School;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ImportSchoolCoordinates extends Command
 {
@@ -54,9 +55,17 @@ class ImportSchoolCoordinates extends Command
                     ->get($url);
 
                 if (!$response->successful()) {
-                    $this->error(
-                        "  GAGAL: HTTP {$response->status()}"
-                    );
+                    $reason = "HTTP {$response->status()}";
+
+                    $this->error("  GAGAL: {$reason}");
+
+                    Log::warning('Import koordinat sekolah gagal', [
+                        'school_id' => $school->id,
+                        'npsn' => $school->npsn,
+                        'name' => $school->name,
+                        'reason' => $reason,
+                    ]);
+
                     $failed++;
                     continue;
                 }
@@ -75,24 +84,68 @@ class ImportSchoolCoordinates extends Command
                 }
 
                 if ($latitude === null || $longitude === null) {
-                    $this->warn('  GAGAL: Koordinat tidak ditemukan.');
+                    $reason = 'Koordinat tidak ditemukan';
+
+                    $this->warn("  GAGAL: {$reason}");
+
+                    Log::warning('Import koordinat sekolah gagal', [
+                        'school_id' => $school->id,
+                        'npsn' => $school->npsn,
+                        'name' => $school->name,
+                        'reason' => $reason,
+                    ]);
+
                     $failed++;
                     continue;
                 }
 
-                $school->latitude = (float) $latitude;
-                $school->longitude = (float) $longitude;
+                $latitudeValue = (float) $latitude;
+                $longitudeValue = (float) $longitude;
+
+                if (
+                    $latitudeValue < -90 ||
+                    $latitudeValue > 90 ||
+                    $longitudeValue < -180 ||
+                    $longitudeValue > 180
+                ) {
+                    $reason = "Koordinat tidak valid: {$latitudeValue}, {$longitudeValue}";
+
+                    $this->error("  GAGAL: {$reason}");
+
+                    Log::warning('Koordinat sekolah di luar rentang valid', [
+                        'school_id' => $school->id,
+                        'npsn' => $school->npsn,
+                        'name' => $school->name,
+                        'latitude' => $latitudeValue,
+                        'longitude' => $longitudeValue,
+                        'reason' => $reason,
+                    ]);
+
+                    $failed++;
+                    continue;
+                }
+
+                $school->latitude = $latitudeValue;
+                $school->longitude = $longitudeValue;
                 $school->save();
 
                 $this->info(
-                    "  BERHASIL: {$latitude}, {$longitude}"
+                    "  BERHASIL: {$latitudeValue}, {$longitudeValue}"
                 );
 
                 $success++;
             } catch (\Throwable $e) {
-                $this->error(
-                    '  ERROR: ' . $e->getMessage()
-                );
+                $reason = $e->getMessage();
+
+                $this->error("  ERROR: {$reason}");
+
+                Log::error('Import koordinat sekolah exception', [
+                    'school_id' => $school->id,
+                    'npsn' => $school->npsn,
+                    'name' => $school->name,
+                    'reason' => $reason,
+                ]);
+
                 $failed++;
             }
 
